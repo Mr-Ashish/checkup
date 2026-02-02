@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import OnboardingScreen from './screens/OnboardingScreen';
 import SetupScreen from './screens/SetupScreen';
 import MainScreen from './screens/MainScreen';
 import { saveSettings, loadSettings } from './utils/storage';
-import { Settings, Contact } from './types';
+import { Settings, Contact, User } from './types';
+// @ts-ignore
 import BackgroundTimer from 'react-native-background-timer';
 import { Linking } from 'react-native';
 
@@ -25,7 +27,7 @@ const App: React.FC = () => {
     if (!currentSettings.lastCheckIn || !currentSettings.period) return;
     const checkInTime = new Date(currentSettings.lastCheckIn.getTime() + currentSettings.period * 60 * 60 * 1000);
     const now = new Date();
-    const diff = checkInTime - now;
+    const diff = checkInTime.getTime() - now.getTime();
     if (diff > 0) {
       BackgroundTimer.setTimeout(() => {
         sendAlert(currentSettings.contacts);
@@ -43,7 +45,7 @@ const App: React.FC = () => {
     if (!currentSettings.lastCheckIn) return;
     const checkInTime = new Date(currentSettings.lastCheckIn.getTime() + currentSettings.period * 60 * 60 * 1000);
     const now = new Date();
-    const diff = Math.max(0, checkInTime - now);
+    const diff = Math.max(0, checkInTime.getTime() - now.getTime());
     setRemainingTime(Math.floor(diff / (1000 * 60)));
   };
 
@@ -60,8 +62,21 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSave = async (contacts: Contact[], period: number) => {
+  const handleSaveUser = async (user: User) => {
     const newSettings: Settings = {
+      user,
+      contacts: [],
+      period: 1,
+      lastCheckIn: null,
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  };
+
+  const handleSave = async (contacts: Contact[], period: number) => {
+    if (!settings) return;
+    const newSettings: Settings = {
+      ...settings,
       contacts,
       period,
       lastCheckIn: new Date(),
@@ -83,7 +98,11 @@ const App: React.FC = () => {
     startTimer(updated);
   };
 
-  if (!settings) {
+  if (!settings || !settings.user) {
+    return <OnboardingScreen onSaveUser={handleSaveUser} />;
+  }
+
+  if (!settings.contacts || settings.contacts.length === 0) {
     return <SetupScreen onSave={handleSave} />;
   }
 

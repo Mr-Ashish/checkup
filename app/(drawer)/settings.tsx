@@ -2,22 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, FlatList } from 'react-native';
 import { Button, TextInput, Modal, Portal, DataTable, Dialog, useTheme, IconButton, Menu } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
-import { Contact } from '../../src/types';
+import { useRouter } from 'expo-router';
+import { Contact as EmergencyContact } from '../../src/types';
 import { saveSettings, loadSettings } from '../../src/utils/storage';
 import { Alert } from 'react-native';
 import * as Contacts from 'expo-contacts';
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const router = useRouter();
 
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [selectedDays, setSelectedDays] = useState<number>(0);
   const [selectedHours, setSelectedHours] = useState<number>(1);
   const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
   const [showContactPicker, setShowContactPicker] = useState<boolean>(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
+  const [showResetDialog, setShowResetDialog] = useState<boolean>(false);
 
   const styles = StyleSheet.create({
     container: {
@@ -51,7 +54,7 @@ export default function SettingsScreen() {
       borderRadius: 8,
       marginBottom: 20,
       width: '100%',
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.background,
       elevation: 2,
     },
     button: {
@@ -127,13 +130,13 @@ export default function SettingsScreen() {
       backgroundColor: theme.colors.surface,
       elevation: 2,
     },
+    resetButton: {
+      marginTop: 20,
+      marginBottom: 10,
+      borderRadius: 8,
+      backgroundColor: theme.colors.error,
+    },
   });
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [period, setPeriod] = useState<number>(1);
-  const [contactList, setContactList] = useState<Contacts.Contact[]>([]);
-  const [showContactPicker, setShowContactPicker] = useState<boolean>(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingContact, setEditingContact] = useState<Contact | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -170,6 +173,14 @@ export default function SettingsScreen() {
     };
     await saveSettings(settings);
     Alert.alert('Success', 'Settings saved!');
+  };
+
+  const handleReset = async () => {
+    await saveSettings(null);
+    setShowResetDialog(false);
+    Alert.alert('App Reset', 'The app has been reset. Please restart the app to go through onboarding again.');
+    // Navigate to home
+    router.replace('/');
   };
 
 
@@ -222,7 +233,7 @@ export default function SettingsScreen() {
     setEditingIndex(null);
   };
 
-  const updateEditingContact = (field: keyof Contact, value: string) => {
+  const updateEditingContact = (field: keyof EmergencyContact, value: string) => {
     if (editingContact) {
       setEditingContact({ ...editingContact, [field]: value });
     }
@@ -264,6 +275,7 @@ export default function SettingsScreen() {
                   visible={menuVisible === index}
                   onDismiss={() => setMenuVisible(null)}
                   anchor={<IconButton icon="dots-vertical" onPress={() => setMenuVisible(index)} />}
+                  style={{ backgroundColor: theme.colors.background }}
                 >
                   <Menu.Item onPress={() => { setMenuVisible(null); startEdit(index); }} title="Edit" />
                   <Menu.Item onPress={() => { setMenuVisible(null); removeContact(index); }} title="Remove" />
@@ -345,14 +357,17 @@ export default function SettingsScreen() {
       <Button mode="contained" onPress={handleSave} style={styles.button}>
         Save Settings
       </Button>
+      <Button mode="contained" onPress={() => setShowResetDialog(true)} style={styles.resetButton}>
+        Reset App
+      </Button>
 
       <Portal>
         <Modal visible={showContactPicker} onDismiss={() => setShowContactPicker(false)} contentContainerStyle={styles.modal}>
           <Text style={styles.title}>Select a Contact</Text>
           <FlatList
             data={contactList}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }: { item: Contacts.Contact }) => (
               <Button mode="outlined" onPress={() => selectContact(item)} style={styles.contactItem}>
                 {item.name}
               </Button>
@@ -360,6 +375,17 @@ export default function SettingsScreen() {
           />
           <Button onPress={() => setShowContactPicker(false)}>Cancel</Button>
         </Modal>
+
+        <Dialog visible={showResetDialog} onDismiss={() => setShowResetDialog(false)} style={{ backgroundColor: theme.colors.background }}>
+          <Dialog.Title>Reset App</Dialog.Title>
+          <Dialog.Content>
+            <Text>Are you sure you want to reset the app? This will clear all your settings, emergency contacts, and user information. You will need to go through the onboarding process again.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowResetDialog(false)}>Cancel</Button>
+            <Button onPress={handleReset}>Reset</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </ScrollView>
   );

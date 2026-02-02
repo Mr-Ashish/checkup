@@ -3,11 +3,15 @@ import { Settings } from '../types';
 
 const SETTINGS_KEY = 'settings';
 
-export const saveSettings = async (settings: Settings): Promise<void> => {
-  await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({
-    ...settings,
-    lastCheckIn: settings.lastCheckIn?.toISOString(),
-  }));
+export const saveSettings = async (settings: Settings | null): Promise<void> => {
+  if (settings) {
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ...settings,
+      lastCheckIn: settings.lastCheckIn?.toISOString(),
+    }));
+  } else {
+    await AsyncStorage.removeItem(SETTINGS_KEY);
+  }
 };
 
 export const loadSettings = async (): Promise<Settings | null> => {

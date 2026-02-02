@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { Provider as PaperProvider } from 'react-native-paper';
-import { lightTheme, darkTheme } from '../theme';
+import { lightTheme, darkTheme } from '@/theme';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 

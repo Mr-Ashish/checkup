@@ -1,36 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useLayoutEffect, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import OnboardingScreen from '../../src/screens/OnboardingScreen';
 import SetupScreen from '../../src/screens/SetupScreen';
 import MainScreen from '../../src/screens/MainScreen';
 import { saveSettings, loadSettings } from '../../src/utils/storage';
-import { Settings, Contact } from '../../src/types';
+import { Settings, Contact, User } from '../../src/types';
 // import BackgroundTimer from 'react-native-background-timer'; // Temporarily disabled for Expo compatibility
 import { Linking } from 'react-native';
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [remainingTime, setRemainingTime] = useState<number>(0);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const loaded = await loadSettings();
-        if (loaded) {
-          setSettings(loaded);
-          startTimer(loaded);
-        }
-      } catch (error) {
-        console.error('Error loading settings:', error);
-        // Handle error, perhaps show alert or reset
+  const loadAppSettings = useCallback(async () => {
+    try {
+      const loaded = await loadSettings();
+      setSettings(loaded);
+      if (loaded && loaded.lastCheckIn) {
+        startTimer(loaded);
       }
-    };
-    init();
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
   }, []);
+
+  useLayoutEffect(() => {
+    const shouldHide = !settings || !settings.user || (!settings.contacts || settings.contacts.length === 0);
+    navigation.setOptions({
+      tabBarStyle: shouldHide ? { display: 'none' } : undefined,
+      headerShown: shouldHide ? false : true,
+    });
+  }, [settings, navigation]);
+
+  useEffect(() => {
+    loadAppSettings();
+  }, [loadAppSettings]);
+
+  useFocusEffect(useCallback(() => {
+    loadAppSettings();
+  }, [loadAppSettings]));
 
   const startTimer = (currentSettings: Settings) => {
     if (!currentSettings.lastCheckIn || !currentSettings.period) return;
     const checkInTime = new Date(currentSettings.lastCheckIn.getTime() + currentSettings.period * 60 * 60 * 1000);
     const now = new Date();
-    const diff = checkInTime - now;
+    const diff = checkInTime.getTime() - now.getTime();
     if (diff > 0) {
       setTimeout(() => {
         sendAlertEmail(currentSettings.contacts);
@@ -46,7 +62,7 @@ export default function HomeScreen() {
     if (!currentSettings.lastCheckIn) return;
     const checkInTime = new Date(currentSettings.lastCheckIn.getTime() + currentSettings.period * 60 * 60 * 1000);
     const now = new Date();
-    const diff = Math.max(0, checkInTime - now);
+    const diff = Math.max(0, checkInTime.getTime() - now.getTime());
     setRemainingTime(Math.floor(diff / (1000 * 60)));
   };
 
@@ -57,8 +73,21 @@ export default function HomeScreen() {
     Linking.openURL(`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
-  const handleSave = async (contacts: Contact[], period: number) => {
+  const handleSaveUser = async (user: User) => {
     const newSettings: Settings = {
+      user,
+      contacts: [],
+      period: 1,
+      lastCheckIn: null,
+    };
+    setSettings(newSettings);
+    await saveSettings(newSettings);
+  };
+
+  const handleSave = async (contacts: Contact[], period: number) => {
+    if (!settings) return;
+    const newSettings: Settings = {
+      ...settings,
       contacts,
       period,
       lastCheckIn: new Date(),
@@ -80,7 +109,11 @@ export default function HomeScreen() {
     startTimer(updated);
   };
 
-  if (!settings) {
+  if (!settings || !settings.user) {
+    return <OnboardingScreen onSaveUser={handleSaveUser} />;
+  }
+
+  if (!settings.contacts || settings.contacts.length === 0) {
     return <SetupScreen onSave={handleSave} />;
   }
 

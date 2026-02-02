@@ -1,62 +1,37 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, Animated, Dimensions } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { Contact } from '../types';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Animated, Dimensions } from 'react-native';
 import { Colors } from '@/constants/theme';
+import { User } from '../types';
 
-interface SetupScreenProps {
-  onSave: (contacts: Contact[], period: number) => void;
+interface OnboardingScreenProps {
+  onSaveUser: (user: User) => void;
 }
 
-const contactIndices = [0, 1];
-const fields = ['name', 'phone', 'email'] as const;
-type Field = typeof fields[number];
+const steps = [
+  { key: 'name', label: 'What is your name?', placeholder: 'Enter your full name', keyboardType: 'default' },
+  { key: 'phone', label: 'What is your phone number?', placeholder: 'Enter your phone number', keyboardType: 'phone-pad' },
+  { key: 'email', label: 'What is your email address?', placeholder: 'Enter your email', keyboardType: 'email-address' },
+];
 
-interface Step {
-  contactIndex?: number;
-  field?: Field;
-  type?: 'period';
-}
-
-const contactSteps: Step[] = contactIndices.flatMap(contactIndex =>
-  fields.map(field => ({ contactIndex, field }))
-);
-const periodStep: Step = { type: 'period' };
-const steps = [...contactSteps, periodStep];
-
-const SetupScreen: React.FC<SetupScreenProps> = ({ onSave }) => {
+const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveUser }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [contacts, setContacts] = useState<Contact[]>([
-    { name: '', phone: '', email: '' },
-    { name: '', phone: '', email: '' },
-  ]);
-  const [period, setPeriod] = useState<number>(1);
+  const [user, setUser] = useState<User>({ name: '', phone: '', email: '' });
   const translateXAnim = useRef(new Animated.Value(0)).current;
   const { width } = Dimensions.get('window');
 
   const currentStepData = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
-  const isNextEnabled = currentStepData.type ? true : (contacts[currentStepData.contactIndex!]?.[currentStepData.field!] || '').trim() !== '';
 
-  const handleSave = () => {
-    const validContacts = contacts.filter(c => (c.email && c.email.trim() !== '') || (c.phone && c.phone.trim() !== ''));
-    if (validContacts.length === 0) {
-      Alert.alert('Error', 'Please enter at least one emergency contact with email or phone.');
-      return;
-    }
-    onSave(validContacts, period);
+  const handleInputChange = (value: string) => {
+    setUser(prev => ({ ...prev, [currentStepData.key]: value }));
   };
 
-  const updateContact = (index: number, field: keyof Contact, value: string) => {
-    const newContacts = [...contacts];
-    newContacts[index] = { ...newContacts[index], [field]: value };
-    setContacts(newContacts);
-  };
+  const isNextEnabled = user[currentStepData.key as keyof User]?.trim() !== '';
 
   const handleNext = () => {
     if (isLastStep) {
-      handleSave();
+      onSaveUser(user);
     } else {
       Animated.timing(translateXAnim, {
         toValue: -width,
@@ -92,58 +67,18 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onSave }) => {
     }
   };
 
-  const renderStep = () => {
-    if (currentStepData.type === 'period') {
-      return (
-        <View style={styles.stepContainer}>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={period}
-              onValueChange={(itemValue: number) => setPeriod(itemValue)}
-            >
-              <Picker.Item label="1 hour" value={1} />
-              <Picker.Item label="2 hours" value={2} />
-              <Picker.Item label="4 hours" value={4} />
-              <Picker.Item label="8 hours" value={8} />
-              <Picker.Item label="12 hours" value={12} />
-              <Picker.Item label="24 hours" value={24} />
-            </Picker>
-          </View>
-        </View>
-      );
-    } else {
-      const { contactIndex, field } = currentStepData as { contactIndex: number; field: Field };
-      const value = contacts[contactIndex][field];
-      const placeholders = {
-        name: 'Name',
-        phone: 'Phone Number',
-        email: 'Email Address',
-      };
-      const keyboardTypes = {
-        name: 'default',
-        phone: 'phone-pad',
-        email: 'email-address',
-      };
-      return (
-        <View style={styles.stepContainer}>
-          <TextInput
-            value={value}
-            onChangeText={(text) => updateContact(contactIndex, field, text)}
-            placeholder={placeholders[field]}
-            style={styles.input}
-            keyboardType={keyboardTypes[field] as any}
-            autoCapitalize={field === 'name' ? 'words' : 'none'}
-            autoCorrect={false}
-          />
-        </View>
-      );
-    }
-  };
-
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Animated.View style={[styles.content, { transform: [{ translateX: translateXAnim }] }]}>
-        {renderStep()}
+        <TextInput
+          style={styles.input}
+          placeholder={currentStepData.placeholder}
+          value={user[currentStepData.key as keyof User] || ''}
+          onChangeText={handleInputChange}
+          keyboardType={currentStepData.keyboardType as any}
+          autoCapitalize={currentStepData.key === 'name' ? 'words' : 'none'}
+          autoCorrect={false}
+        />
       </Animated.View>
       <View style={styles.footer}>
         <View style={styles.stepIndicator}>
@@ -176,24 +111,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  stepContainer: {
-    alignItems: 'center',
-  },
   input: {
     borderWidth: 2,
     borderColor: Colors.light.primary,
-    padding: 15,
-    width: '100%',
     borderRadius: 10,
+    padding: 15,
     fontSize: 18,
     color: Colors.light.text,
-    backgroundColor: Colors.light.surface,
-  },
-  pickerContainer: {
-    borderWidth: 2,
-    borderColor: Colors.light.primary,
-    borderRadius: 10,
-    width: '100%',
     backgroundColor: Colors.light.surface,
   },
   footer: {
@@ -240,4 +164,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SetupScreen;
+export default OnboardingScreen;
