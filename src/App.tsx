@@ -28,14 +28,14 @@ const App: React.FC = () => {
     const diff = checkInTime - now;
     if (diff > 0) {
       BackgroundTimer.setTimeout(() => {
-        sendAlertEmail(currentSettings.contacts);
+        sendAlert(currentSettings.contacts);
       }, diff);
       updateRemainingTime(currentSettings);
       const interval = BackgroundTimer.setInterval(() => {
         updateRemainingTime(currentSettings);
       }, 60000);
     } else {
-      sendAlertEmail(currentSettings.contacts);
+      sendAlert(currentSettings.contacts);
     }
   };
 
@@ -47,11 +47,17 @@ const App: React.FC = () => {
     setRemainingTime(Math.floor(diff / (1000 * 60)));
   };
 
-  const sendAlertEmail = (contacts: Contact[]) => {
-    const emails = contacts.map(c => c.email).join(',');
+  const sendAlert = (contacts: Contact[]) => {
+    const emails = contacts.filter(c => c.email).map(c => c.email).join(',');
+    const phones = contacts.filter(c => c.phone).map(c => c.phone).join(',');
     const subject = 'Emergency Alert';
     const body = 'The user has not checked in as scheduled.';
-    Linking.openURL(`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    if (emails) {
+      Linking.openURL(`mailto:${emails}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    }
+    if (phones) {
+      Linking.openURL(`sms:${phones}?body=${encodeURIComponent(body)}`);
+    }
   };
 
   const handleSave = async (contacts: Contact[], period: number) => {
