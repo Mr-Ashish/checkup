@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLayoutEffect, useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
-import OnboardingScreen from '../../src/screens/OnboardingScreen';
-import SetupScreen from '../../src/screens/SetupScreen';
-import MainScreen from '../../src/screens/MainScreen';
-import { saveSettings, loadSettings } from '../../src/utils/storage';
-import { Settings, Contact, User } from '../../src/types';
+import OnboardingScreen from '../../screens/OnboardingScreen';
+import SetupScreen from '../../screens/SetupScreen';
+import MainScreen from '../../screens/MainScreen';
+import { saveSettings, loadSettings } from '../../utils/storage';
+import { Settings, Contact, User } from '../../types';
 // import BackgroundTimer from 'react-native-background-timer'; // Temporarily disabled for Expo compatibility
 import { Linking } from 'react-native';
 
@@ -42,29 +42,35 @@ export default function HomeScreen() {
     loadAppSettings();
   }, [loadAppSettings]));
 
-  const startTimer = (currentSettings: Settings) => {
-    if (!currentSettings.lastCheckIn || !currentSettings.period) return;
-    const checkInTime = new Date(currentSettings.lastCheckIn.getTime() + currentSettings.period * 60 * 60 * 1000);
+  const checkInTime = useMemo(() => {
+    if (!settings?.lastCheckIn || !settings?.period) return null;
+    return new Date(settings.lastCheckIn.getTime() + settings.period * 60 * 60 * 1000);
+  }, [settings]);
+
+  const remainingTimeCalc = useMemo(() => {
+    if (!checkInTime) return 0;
+    const now = new Date();
+    const diff = Math.max(0, checkInTime.getTime() - now.getTime());
+    return Math.floor(diff / (1000 * 60));
+  }, [checkInTime]);
+
+  useEffect(() => {
+    setRemainingTime(remainingTimeCalc);
+  }, [remainingTimeCalc]);
+
+  useEffect(() => {
+    if (!checkInTime) return;
     const now = new Date();
     const diff = checkInTime.getTime() - now.getTime();
     if (diff > 0) {
-      setTimeout(() => {
-        sendAlertEmail(currentSettings.contacts);
+      const timeout = setTimeout(() => {
+        sendAlertEmail(settings!.contacts);
       }, diff);
-      updateRemainingTime(currentSettings);
-      // Note: Interval not implemented for simplicity; remaining time updates only on re-render
+      return () => clearTimeout(timeout);
     } else {
-      sendAlertEmail(currentSettings.contacts);
+      sendAlertEmail(settings!.contacts);
     }
-  };
-
-  const updateRemainingTime = (currentSettings: Settings) => {
-    if (!currentSettings.lastCheckIn) return;
-    const checkInTime = new Date(currentSettings.lastCheckIn.getTime() + currentSettings.period * 60 * 60 * 1000);
-    const now = new Date();
-    const diff = Math.max(0, checkInTime.getTime() - now.getTime());
-    setRemainingTime(Math.floor(diff / (1000 * 60)));
-  };
+  }, [checkInTime, settings]);
 
   const sendAlertEmail = (contacts: Contact[]) => {
     const emails = contacts.map(c => c.email).join(',');

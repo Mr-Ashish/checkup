@@ -3,8 +3,8 @@ import { View, Text, ScrollView, StyleSheet, FlatList } from 'react-native';
 import { Button, TextInput, Modal, Portal, DataTable, Dialog, useTheme, IconButton, Menu } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
-import { Contact as EmergencyContact } from '../../src/types';
-import { saveSettings, loadSettings } from '../../src/utils/storage';
+import { Contact as EmergencyContact } from '../../types';
+import { saveSettings, loadSettings } from '../../utils/storage';
 import { Alert } from 'react-native';
 import * as Contacts from 'expo-contacts';
 

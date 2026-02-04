@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, FlatList, TouchableOpacity, Animated } from 'react-native';
 import { Button, TextInput, Card, Title, Modal, Portal, useTheme } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
-import { saveSettings, loadSettings } from '../../src/utils/storage';
-import { Settings, Contact } from '../../src/types';
-import { calculateTimeRemaining, formatTimeRemaining, getTotalSeconds, getDisclaimerStyle, TimeRemaining } from '../../src/utils/time';
+import { saveSettings, loadSettings } from '../../utils/storage';
+import { Settings, Contact } from '../../types';
+import { calculateTimeRemaining, formatTimeRemaining, getTotalSeconds, getDisclaimerStyle, TimeRemaining } from '../../utils/time';
 // import BackgroundTimer from 'react-native-background-timer'; // Temporarily disabled for Expo compatibility
 import { Linking, Alert } from 'react-native';
 import * as Contacts from 'expo-contacts';

@@ -1,35 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Animated, Dimensions } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { User } from '../types';
+import { ONBOARDING_STEPS } from '../constants/onboarding';
 
 interface OnboardingScreenProps {
   onSaveUser: (user: User) => void;
 }
 
-const steps = [
-  { key: 'name', label: 'What is your name?', placeholder: 'Enter your full name', keyboardType: 'default' },
-  { key: 'phone', label: 'What is your phone number?', placeholder: 'Enter your phone number', keyboardType: 'phone-pad' },
-  { key: 'email', label: 'What is your email address?', placeholder: 'Enter your email', keyboardType: 'email-address' },
-];
-
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveUser }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState<number>(0);
   const [user, setUser] = useState<User>({ name: '', phone: '', email: '' });
-  const translateXAnim = useRef(new Animated.Value(0)).current;
-  const { width } = Dimensions.get('window');
+  const translateXAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
+  const { width } = useMemo(() => Dimensions.get('window'), []);
 
-  const currentStepData = steps[currentStep];
-  const isLastStep = currentStep === steps.length - 1;
-  const isFirstStep = currentStep === 0;
+  const currentStepData = useMemo(() => ONBOARDING_STEPS[currentStep], [currentStep]);
+  const isLastStep = useMemo(() => currentStep === ONBOARDING_STEPS.length - 1, [currentStep]);
+  const isFirstStep = useMemo(() => currentStep === 0, [currentStep]);
 
-  const handleInputChange = (value: string) => {
+  const handleInputChange = useCallback((value: string) => {
     setUser(prev => ({ ...prev, [currentStepData.key]: value }));
-  };
+  }, [currentStepData.key]);
 
-  const isNextEnabled = user[currentStepData.key as keyof User]?.trim() !== '';
+  const isNextEnabled = useMemo(() => user[currentStepData.key as keyof User]?.trim() !== '', [user, currentStepData.key]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (isLastStep) {
       onSaveUser(user);
     } else {
@@ -47,9 +42,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveUser }) => {
         }).start();
       });
     }
-  };
+  }, [isLastStep, onSaveUser, user, translateXAnim, width, currentStep]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (!isFirstStep) {
       Animated.timing(translateXAnim, {
         toValue: width,
@@ -65,7 +60,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveUser }) => {
         }).start();
       });
     }
-  };
+  }, [isFirstStep, translateXAnim, width, currentStep]);
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -82,7 +77,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onSaveUser }) => {
       </Animated.View>
       <View style={styles.footer}>
         <View style={styles.stepIndicator}>
-          {steps.map((_, index) => (
+          {ONBOARDING_STEPS.map((_, index) => (
             <View key={index} style={[styles.stepDot, index === currentStep && styles.stepDotActive]} />
           ))}
         </View>

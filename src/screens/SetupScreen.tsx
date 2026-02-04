@@ -1,48 +1,45 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, Animated, Dimensions } from 'react-native';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, Animated, Dimensions, KeyboardType } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Contact } from '../types';
 import { Colors } from '@/constants/theme';
+import { CONTACT_INDICES, CONTACT_FIELDS, ContactField, CONTACT_PLACEHOLDERS, CONTACT_KEYBOARD_TYPES, PERIOD_OPTIONS, ERROR_MESSAGES } from '../constants/setup';
 
 interface SetupScreenProps {
   onSave: (contacts: Contact[], period: number) => void;
 }
 
-const contactIndices = [0, 1];
-const fields = ['name', 'phone', 'email'] as const;
-type Field = typeof fields[number];
-
 interface Step {
   contactIndex?: number;
-  field?: Field;
+  field?: ContactField;
   type?: 'period';
 }
 
-const contactSteps: Step[] = contactIndices.flatMap(contactIndex =>
-  fields.map(field => ({ contactIndex, field }))
+const contactSteps: Step[] = CONTACT_INDICES.flatMap(contactIndex =>
+  CONTACT_FIELDS.map(field => ({ contactIndex, field }))
 );
 const periodStep: Step = { type: 'period' };
 const steps = [...contactSteps, periodStep];
 
 const SetupScreen: React.FC<SetupScreenProps> = ({ onSave }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState<number>(0);
   const [contacts, setContacts] = useState<Contact[]>([
     { name: '', phone: '', email: '' },
     { name: '', phone: '', email: '' },
   ]);
   const [period, setPeriod] = useState<number>(1);
-  const translateXAnim = useRef(new Animated.Value(0)).current;
+  const translateXAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
   const { width } = Dimensions.get('window');
 
   const currentStepData = steps[currentStep];
   const isLastStep = currentStep === steps.length - 1;
   const isFirstStep = currentStep === 0;
-  const isNextEnabled = currentStepData.type ? true : (contacts[currentStepData.contactIndex!]?.[currentStepData.field!] || '').trim() !== '';
+  const isNextEnabled = currentStepData.type === 'period' || (currentStepData.contactIndex !== undefined && currentStepData.field !== undefined && (contacts[currentStepData.contactIndex]?.[currentStepData.field] || '').trim() !== '');
 
   const handleSave = () => {
     const validContacts = contacts.filter(c => (c.email && c.email.trim() !== '') || (c.phone && c.phone.trim() !== ''));
     if (validContacts.length === 0) {
-      Alert.alert('Error', 'Please enter at least one emergency contact with email or phone.');
+      Alert.alert('Error', ERROR_MESSAGES.noContacts);
       return;
     }
     onSave(validContacts, period);
@@ -101,37 +98,26 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onSave }) => {
               selectedValue={period}
               onValueChange={(itemValue: number) => setPeriod(itemValue)}
             >
-              <Picker.Item label="1 hour" value={1} />
-              <Picker.Item label="2 hours" value={2} />
-              <Picker.Item label="4 hours" value={4} />
-              <Picker.Item label="8 hours" value={8} />
-              <Picker.Item label="12 hours" value={12} />
-              <Picker.Item label="24 hours" value={24} />
+              {PERIOD_OPTIONS.map(option => (
+                <Picker.Item key={option.value} label={option.label} value={option.value} />
+              ))}
             </Picker>
           </View>
         </View>
       );
     } else {
-      const { contactIndex, field } = currentStepData as { contactIndex: number; field: Field };
+      const contactIndex = currentStepData.contactIndex!;
+      const field = currentStepData.field!;
       const value = contacts[contactIndex][field];
-      const placeholders = {
-        name: 'Name',
-        phone: 'Phone Number',
-        email: 'Email Address',
-      };
-      const keyboardTypes = {
-        name: 'default',
-        phone: 'phone-pad',
-        email: 'email-address',
-      };
+
       return (
         <View style={styles.stepContainer}>
           <TextInput
             value={value}
             onChangeText={(text) => updateContact(contactIndex, field, text)}
-            placeholder={placeholders[field]}
+            placeholder={CONTACT_PLACEHOLDERS[field]}
             style={styles.input}
-            keyboardType={keyboardTypes[field] as any}
+            keyboardType={CONTACT_KEYBOARD_TYPES[field] as KeyboardType}
             autoCapitalize={field === 'name' ? 'words' : 'none'}
             autoCorrect={false}
           />
