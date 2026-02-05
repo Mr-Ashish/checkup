@@ -1,45 +1,72 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Color palette tokens — extracted from the theme.png design.
+ * Single source of truth for all hex values. src/theme.ts (Paper MD3) mirrors these.
  */
 
 import { Platform } from 'react-native';
 
-// Color palette: 0D1821, 344966, E6AACE, F0F4EF, BFCC94
-const darkNavy = '#0D1821';
-const slateBlue = '#344966';
-const softPink = '#E6AACE';
-const offWhite = '#F0F4EF';
-const sageGreen = '#BFCC94';
+const deepBlack        = '#111827';
+const cardSurface      = '#1E293B';
+const cardBorder       = '#334155';
+const primaryText      = '#F1F5F9';
+const mutedText        = '#94A3B8';
+const tealPrimary      = '#2DD4BF';
+const tealGlow         = '#0D9488';
+const urgentRed        = '#EF4444';
+const urgentRedDark    = '#DC2626';
+const safeGreen        = '#22C55E';
+const statusYellow     = '#EAB308';
+const avatarPlaceholder = '#475569';
+const inputBorder      = '#475569';
 
+// TODO: define a proper light palette here for future light mode support.
+// Currently both light and dark point to the same values because the app is forced dark.
 export const Colors = {
   light: {
-    text: darkNavy,
-    background: offWhite,
-    tint: slateBlue,
-    icon: slateBlue,
-    tabIconDefault: slateBlue,
-    tabIconSelected: sageGreen,
-    primary: slateBlue,
-    secondary: softPink,
-    accent: sageGreen,
-    surface: offWhite,
-    onPrimary: offWhite,
-    onSurfaceDisabled: darkNavy + '61', // with alpha
+    text: primaryText,
+    background: deepBlack,
+    tint: tealPrimary,
+    icon: tealPrimary,
+    tabIconDefault: mutedText,
+    tabIconSelected: tealPrimary,
+    primary: tealPrimary,
+    secondary: mutedText,
+    accent: safeGreen,
+    surface: cardSurface,
+    onPrimary: deepBlack,
+    onSurfaceDisabled: mutedText + '61',
+    cardBorder,
+    mutedText,
+    tealGlow,
+    urgentRed,
+    urgentRedDark,
+    safeGreen,
+    statusYellow,
+    avatarPlaceholder,
+    inputBorder,
   },
   dark: {
-    text: offWhite,
-    background: darkNavy,
-    tint: softPink,
-    icon: softPink,
-    tabIconDefault: softPink,
-    tabIconSelected: sageGreen,
-    primary: softPink,
-    secondary: slateBlue,
-    accent: sageGreen,
-    surface: darkNavy,
-    onPrimary: darkNavy,
-    onSurfaceDisabled: offWhite + '61',
+    text: primaryText,
+    background: deepBlack,
+    tint: tealPrimary,
+    icon: tealPrimary,
+    tabIconDefault: mutedText,
+    tabIconSelected: tealPrimary,
+    primary: tealPrimary,
+    secondary: mutedText,
+    accent: safeGreen,
+    surface: cardSurface,
+    onPrimary: deepBlack,
+    onSurfaceDisabled: mutedText + '61',
+    cardBorder,
+    mutedText,
+    tealGlow,
+    urgentRed,
+    urgentRedDark,
+    safeGreen,
+    statusYellow,
+    avatarPlaceholder,
+    inputBorder,
   },
 };
 

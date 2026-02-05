@@ -5,6 +5,8 @@ import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import { Contact as EmergencyContact } from '../../types';
 import { saveSettings, loadSettings } from '../../utils/storage';
+import { Settings } from '../../types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import * as Contacts from 'expo-contacts';
 
@@ -21,6 +23,7 @@ export default function SettingsScreen() {
   const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
   const [showResetDialog, setShowResetDialog] = useState<boolean>(false);
+  const [fullSettings, setFullSettings] = useState<Settings | null>(null);
 
   const styles = StyleSheet.create({
     container: {
@@ -143,6 +146,7 @@ export default function SettingsScreen() {
       try {
         const loaded = await loadSettings();
         if (loaded) {
+          setFullSettings(loaded);
           setContacts(loaded.contacts || []);
           const period = loaded.period || 1;
           setSelectedDays(Math.floor(period / 24));
@@ -166,20 +170,22 @@ export default function SettingsScreen() {
       Alert.alert('Error', 'Please select a valid check-in period.');
       return;
     }
-    const settings = {
+    const merged: Settings = {
+      ...fullSettings,
       contacts: validContacts,
       period,
       lastCheckIn: new Date(),
     };
-    await saveSettings(settings);
+    await saveSettings(merged);
+    setFullSettings(merged);
     Alert.alert('Success', 'Settings saved!');
   };
 
   const handleReset = async () => {
     await saveSettings(null);
+    await AsyncStorage.removeItem('hasSeenWelcome');
     setShowResetDialog(false);
     Alert.alert('App Reset', 'The app has been reset. Please restart the app to go through onboarding again.');
-    // Navigate to home
     router.replace('/');
   };
 

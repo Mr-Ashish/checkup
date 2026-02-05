@@ -1,102 +1,68 @@
 import { MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
 
-// Color palette: 0D1821, 344966, E6AACE, F0F4EF, BFCC94
-const darkNavy = '#0D1821';
-const slateBlue = '#344966';
-const softPink = '#E6AACE';
-const offWhite = '#F0F4EF';
-const sageGreen = '#BFCC94';
+// Color palette tokens — must stay in sync with src/constants/theme.ts
+const deepBlack     = '#111827';
+const cardSurface   = '#1E293B';
+const cardBorder    = '#334155';
+const primaryText   = '#F1F5F9';
+const mutedText     = '#94A3B8';
+const tealPrimary   = '#2DD4BF';
+const tealGlow      = '#0D9488';
+const urgentRed     = '#EF4444';
+const urgentRedDark = '#DC2626';
+const safeGreen     = '#22C55E';
 
-const customColors = {
-  primary: slateBlue,
-  onPrimary: offWhite,
-  primaryContainer: softPink,
-  onPrimaryContainer: darkNavy,
-  secondary: sageGreen,
-  onSecondary: darkNavy,
-  secondaryContainer: softPink,
-  onSecondaryContainer: darkNavy,
-  tertiary: softPink,
-  onTertiary: darkNavy,
-  tertiaryContainer: sageGreen,
-  onTertiaryContainer: darkNavy,
-  error: '#B00020',
+const darkColors = {
+  primary: tealPrimary,
+  onPrimary: deepBlack,
+  primaryContainer: tealGlow,
+  onPrimaryContainer: primaryText,
+  secondary: mutedText,
+  onSecondary: deepBlack,
+  secondaryContainer: cardSurface,
+  onSecondaryContainer: primaryText,
+  tertiary: safeGreen,
+  onTertiary: deepBlack,
+  tertiaryContainer: '#166534',
+  onTertiaryContainer: primaryText,
+  error: urgentRed,
   onError: '#FFFFFF',
-  errorContainer: '#FFDAD6',
-  onErrorContainer: '#410002',
-  background: offWhite,
-  onBackground: darkNavy,
-  surface: offWhite,
-  onSurface: darkNavy,
-  surfaceVariant: softPink,
-  onSurfaceVariant: darkNavy,
-  outline: slateBlue,
-  outlineVariant: sageGreen,
-  shadow: darkNavy,
-  scrim: darkNavy,
-  inverseSurface: darkNavy,
-  inverseOnSurface: offWhite,
-  inversePrimary: softPink,
+  errorContainer: urgentRedDark,
+  onErrorContainer: '#FEE2E2',
+  background: deepBlack,
+  onBackground: primaryText,
+  surface: cardSurface,
+  onSurface: primaryText,
+  surfaceVariant: cardBorder,
+  onSurfaceVariant: mutedText,
+  outline: '#475569',
+  outlineVariant: cardBorder,
+  shadow: '#000000',
+  scrim: '#000000',
+  inverseSurface: primaryText,
+  inverseOnSurface: deepBlack,
+  inversePrimary: tealGlow,
   elevation: {
     level0: 'transparent',
-    level1: sageGreen + '20', // with alpha
-    level2: sageGreen + '40',
-    level3: sageGreen + '60',
-    level4: sageGreen + '80',
-    level5: sageGreen + 'A0',
+    level1: cardSurface + '20',
+    level2: cardSurface + '40',
+    level3: cardSurface + '60',
+    level4: cardSurface + '80',
+    level5: cardSurface + 'A0',
   },
-  surfaceDisabled: darkNavy + '1F',
-  onSurfaceDisabled: darkNavy + '61',
-  backdrop: darkNavy + '4D',
+  surfaceDisabled: deepBlack + '1F',
+  onSurfaceDisabled: mutedText + '61',
+  backdrop: '#000000' + '4D',
 };
 
+// TODO: define a separate light palette for future light mode support.
+// Both themes currently share darkColors because the app is forced dark.
 export const lightTheme = {
   ...MD3LightTheme,
-  colors: customColors,
+  colors: darkColors,
 };
 
 export const darkTheme = {
   ...MD3DarkTheme,
-  colors: {
-    primary: softPink,
-    onPrimary: darkNavy,
-    primaryContainer: slateBlue,
-    onPrimaryContainer: offWhite,
-    secondary: sageGreen,
-    onSecondary: darkNavy,
-    secondaryContainer: slateBlue,
-    onSecondaryContainer: offWhite,
-    tertiary: sageGreen,
-    onTertiary: darkNavy,
-    tertiaryContainer: softPink,
-    onTertiaryContainer: darkNavy,
-    error: '#CF6679',
-    onError: '#000000',
-    errorContainer: '#B00020',
-    onErrorContainer: '#FFDAD6',
-    background: darkNavy,
-    onBackground: offWhite,
-    surface: darkNavy,
-    onSurface: offWhite,
-    surfaceVariant: slateBlue,
-    onSurfaceVariant: offWhite,
-    outline: softPink,
-    outlineVariant: sageGreen,
-    shadow: '#000000',
-    scrim: '#000000',
-    inverseSurface: offWhite,
-    inverseOnSurface: darkNavy,
-    inversePrimary: slateBlue,
-    elevation: {
-      level0: 'transparent',
-      level1: slateBlue + '20',
-      level2: slateBlue + '40',
-      level3: slateBlue + '60',
-      level4: slateBlue + '80',
-      level5: slateBlue + 'A0',
-    },
-    surfaceDisabled: offWhite + '1F',
-    onSurfaceDisabled: offWhite + '61',
-    backdrop: darkNavy + '4D',
-  },
+  colors: darkColors,
 };

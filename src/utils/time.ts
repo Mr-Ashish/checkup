@@ -22,6 +22,13 @@ export const getTotalSeconds = (time: TimeRemaining): number => {
   return time.days * 86400 + time.hours * 3600 + time.mins * 60 + time.secs;
 };
 
+export const formatHHMMSS = (time: TimeRemaining): string => {
+  const h = String(time.hours).padStart(2, '0');
+  const m = String(time.mins).padStart(2, '0');
+  const s = String(time.secs).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
+
 export const getDisclaimerStyle = (totalSeconds: number, theme: any) => {
   let color = theme.colors.onSurfaceVariant;
   let opacity = 0.5;

@@ -16,4 +16,5 @@ export interface Settings {
   contacts: Contact[];
   period: number; // in hours
   lastCheckIn: Date | null;
+  setupComplete?: boolean; // false during initial 3-step setup; treat undefined as true (backward compat)
 }

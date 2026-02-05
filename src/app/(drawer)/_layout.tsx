@@ -8,6 +8,7 @@ export default function DrawerLayout() {
         options={{
           drawerLabel: 'Home',
           title: 'Emergency Check-In',
+          headerShown: false,
         }}
       />
       <Drawer.Screen
