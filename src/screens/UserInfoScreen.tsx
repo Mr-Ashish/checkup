@@ -3,6 +3,8 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, useTheme } from 'react-native-paper';
 import StepIndicator from '@/components/StepIndicator';
 import { User } from '@/types';
+import { isValidEmail } from '@/utils/validation';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface UserInfoScreenProps {
   onSaveUser: (user: User) => void;
@@ -11,23 +13,33 @@ interface UserInfoScreenProps {
 const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ onSaveUser }) => {
   const theme = useTheme();
   const [user, setUser] = useState<User>({ name: '', phone: '', email: '' });
+  const [emailError, setEmailError] = useState(false);
 
   const updateField = useCallback((field: keyof User, value: string) => {
     setUser(prev => ({ ...prev, [field]: value }));
+    if (field === 'email') {
+      setEmailError(false);
+    }
   }, []);
 
   const handleContinue = useCallback(() => {
+    const emailValid = isValidEmail(user.email);
+    if (!emailValid) {
+      setEmailError(true);
+      return;
+    }
     onSaveUser(user);
   }, [user, onSaveUser]);
 
-  const isNextEnabled = (user.name || '').trim().length > 0;
+  const isNextEnabled = (user.name || '').trim().length > 0 && isValidEmail(user.email);
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <StepIndicator currentStep={1} totalSteps={3} />
+    <ErrorBoundary>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <StepIndicator currentStep={1} totalSteps={3} />
 
       <View style={styles.form}>
         <TextInput
@@ -57,6 +69,7 @@ const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ onSaveUser }) => {
           keyboardType="email-address"
           autoCorrect={false}
           autoCapitalize="none"
+          error={emailError}
         />
       </View>
 
@@ -71,7 +84,8 @@ const UserInfoScreen: React.FC<UserInfoScreenProps> = ({ onSaveUser }) => {
           Continue
         </Button>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </ErrorBoundary>
   );
 };
 

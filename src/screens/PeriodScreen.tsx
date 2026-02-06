@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Button, useTheme } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker';
 import StepIndicator from '@/components/StepIndicator';
+import NumberScrollPicker from '@/components/NumberScrollPicker';
 
 interface PeriodScreenProps {
   onSave: (period: number) => void;
@@ -30,35 +30,25 @@ const PeriodScreen: React.FC<PeriodScreenProps> = ({ onSave }) => {
       </Text>
 
       <View style={styles.pickersRow}>
-        <View style={[styles.pickerBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceVariant }]}>
-          <Text style={[styles.pickerLabel, { color: theme.colors.onSurfaceVariant }]}>Days</Text>
-          <Picker
-            selectedValue={selectedDays}
-            onValueChange={(value: number) => setSelectedDays(value)}
-            style={styles.picker}
-            itemStyle={{ color: theme.colors.onSurface }}
-          >
-            {Array.from({ length: 8 }, (_, i) => (
-              <Picker.Item key={i} label={`${i}`} value={i} />
-            ))}
-          </Picker>
-        </View>
+        <NumberScrollPicker
+          value={selectedDays}
+          onChange={setSelectedDays}
+          min={0}
+          max={7}
+          label="Days"
+          padStart={0}
+        />
 
         <Text style={[styles.separator, { color: theme.colors.onSurfaceVariant }]}>:</Text>
 
-        <View style={[styles.pickerBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceVariant }]}>
-          <Text style={[styles.pickerLabel, { color: theme.colors.onSurfaceVariant }]}>Hours</Text>
-          <Picker
-            selectedValue={selectedHours}
-            onValueChange={(value: number) => setSelectedHours(value)}
-            style={styles.picker}
-            itemStyle={{ color: theme.colors.onSurface }}
-          >
-            {Array.from({ length: 24 }, (_, i) => (
-              <Picker.Item key={i} label={`${i}`} value={i} />
-            ))}
-          </Picker>
-        </View>
+        <NumberScrollPicker
+          value={selectedHours}
+          onChange={setSelectedHours}
+          min={0}
+          max={23}
+          label="Hours"
+          padStart={2}
+        />
       </View>
 
       <View style={styles.footer}>
@@ -96,24 +86,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-  },
-  pickerBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    alignItems: 'center',
-  },
-  pickerLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    paddingTop: 10,
-  },
-  picker: {
-    height: 100,
-    width: '100%',
+    paddingHorizontal: 20,
   },
   separator: {
     fontSize: 28,
@@ -129,10 +102,6 @@ const styles = StyleSheet.create({
   },
   buttonContent: {
     height: 52,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 

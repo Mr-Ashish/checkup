@@ -5,36 +5,36 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Colors } from '@/constants/theme';
 
 interface BottomNavBarProps {
-  activeTab?: 'home' | 'settings';
+  activeTab?: 'dashboard' | 'history' | 'contacts' | 'profile';
 }
 
-const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab = 'home' }) => {
+const TABS = [
+  { id: 'dashboard', icon: 'home',            label: 'Dashboard', path: '/' },
+  { id: 'history',   icon: 'clock-outline',   label: 'History',   path: '/' },          // screen TBD
+  { id: 'contacts',  icon: 'account-group',   label: 'Contacts',  path: '/settings' },
+  { id: 'profile',   icon: 'account',         label: 'Profile',   path: '/profile' },
+] as const;
+
+const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab = 'dashboard' }) => {
   const router = useRouter();
-  const homeActive = activeTab === 'home';
 
   return (
     <View style={styles.bar}>
-      <TouchableOpacity style={styles.tab} activeOpacity={homeActive ? 1 : 0.6}>
-        <MaterialCommunityIcons
-          name="shield-check"
-          size={22}
-          color={homeActive ? Colors.dark.primary : Colors.dark.mutedText}
-        />
-        <Text style={[styles.label, { color: homeActive ? Colors.dark.primary : Colors.dark.mutedText }]}>
-          Home
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.tab} onPress={() => router.push('/settings')} activeOpacity={0.6}>
-        <MaterialCommunityIcons
-          name="cog"
-          size={22}
-          color={activeTab === 'settings' ? Colors.dark.primary : Colors.dark.mutedText}
-        />
-        <Text style={[styles.label, { color: activeTab === 'settings' ? Colors.dark.primary : Colors.dark.mutedText }]}>
-          Settings
-        </Text>
-      </TouchableOpacity>
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id;
+        const color = isActive ? Colors.dark.primary : Colors.dark.mutedText;
+        return (
+          <TouchableOpacity
+            key={tab.id}
+            style={styles.tab}
+            onPress={() => router.replace(tab.path as any)}
+            activeOpacity={0.6}
+          >
+            <MaterialCommunityIcons name={tab.icon} size={22} color={color} />
+            <Text style={[styles.label, { color }]}>{tab.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

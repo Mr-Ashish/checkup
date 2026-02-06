@@ -1,40 +1,36 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity, FlatList } from 'react-native';
 import {
   Button,
   TextInput,
-  Dialog,
   Portal,
   IconButton,
   Menu,
-  useTheme,
+  Modal,
+  Dialog,
 } from 'react-native-paper';
+import ThemedDialog from '@/components/ThemedDialog';
 import * as Contacts from 'expo-contacts';
 import StepIndicator from '@/components/StepIndicator';
 import { Contact } from '@/types';
 import { Colors } from '@/constants/theme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { isValidEmail, isValidContact } from '@/utils/validation';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface ContactSetupScreenProps {
   onSave: (contacts: Contact[]) => void;
 }
 
 const ContactSetupScreen: React.FC<ContactSetupScreenProps> = ({ onSave }) => {
-  const theme = useTheme();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [menuVisible, setMenuVisible] = useState<number | null>(null);
-  const [searchText, setSearchText] = useState<string>('');
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [deviceContacts, setDeviceContacts] = useState<Contacts.Contact[]>([]);
 
-  const filteredContacts = searchText.trim()
-    ? contacts.filter(
-        (c) =>
-          (c.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
-          (c.phone || '').includes(searchText) ||
-          (c.email || '').toLowerCase().includes(searchText.toLowerCase())
-      )
-    : contacts;
+  // ── edit handlers ──────────────────────────────────────────────────────────
 
   const startAdd = useCallback(() => {
     setEditingContact({ name: '', phone: '', email: '' });
@@ -53,6 +49,10 @@ const ContactSetupScreen: React.FC<ContactSetupScreenProps> = ({ onSave }) => {
 
   const saveEdit = useCallback(() => {
     if (!editingContact) return;
+    if (editingContact.email && !isValidEmail(editingContact.email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
     if (editingIndex === -1) {
       setContacts((prev) => [...prev, editingContact]);
     } else if (editingIndex !== null) {
@@ -75,10 +75,12 @@ const ContactSetupScreen: React.FC<ContactSetupScreenProps> = ({ onSave }) => {
     setEditingContact((prev) => (prev ? { ...prev, [field]: value } : prev));
   }, []);
 
-  const pickFromDevice = async () => {
+  // ── sync handlers ──────────────────────────────────────────────────────────
+
+  const openSyncModal = async () => {
     const { status } = await Contacts.requestPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Contact access is required to pick contacts.');
+      Alert.alert('Permission denied', 'Contact access is required to sync contacts.');
       return;
     }
     const { data } = await Contacts.getContactsAsync({
@@ -88,14 +90,20 @@ const ContactSetupScreen: React.FC<ContactSetupScreenProps> = ({ onSave }) => {
       Alert.alert('No Contacts', 'No contacts found on your device.');
       return;
     }
-    // Pick the first contact for simplicity; a FlatList picker could be added later
-    const picked = data[0];
-    setEditingContact((prev) => ({
-      ...(prev || {}),
-      name: picked.name || prev?.name || '',
-      email: picked.emails?.[0]?.email || prev?.email || '',
-      phone: picked.phoneNumbers?.[0]?.number || prev?.phone || '',
-    }));
+    setDeviceContacts(data);
+    setShowSyncModal(true);
+  };
+
+  const selectDeviceContact = (contact: Contacts.Contact) => {
+    setContacts((prev) => [
+      ...prev,
+      {
+        name: contact.name || '',
+        phone: contact.phoneNumbers?.[0]?.number || '',
+        email: contact.emails?.[0]?.email || '',
+      },
+    ]);
+    setShowSyncModal(false);
   };
 
   const handleContinue = () => {
@@ -106,147 +114,267 @@ const ContactSetupScreen: React.FC<ContactSetupScreenProps> = ({ onSave }) => {
     onSave(contacts);
   };
 
+  // ── render ─────────────────────────────────────────────────────────────────
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StepIndicator currentStep={2} totalSteps={3} />
+    <ErrorBoundary>
+      <View style={styles.container}>
+        {/* Back arrow — overlaid on StepIndicator row; no-op in linear onboarding flow */}
+        <TouchableOpacity style={styles.backBtn} onPress={() => {}}>
+          <MaterialCommunityIcons name="chevron-left" size={24} color={Colors.dark.text} />
+        </TouchableOpacity>
 
-      <Text style={[styles.heading, { color: theme.colors.onSurface }]}>
-        Set up your emergency contacts
-      </Text>
+        <StepIndicator currentStep={2} totalSteps={3} />
 
-      <TextInput
-        label="Search contacts..."
-        value={searchText}
-        onChangeText={setSearchText}
-        mode="outlined"
-        style={styles.search}
-        left={<TextInput.Icon icon="magnify" />}
-      />
+        <Text style={styles.heading}>Set up your emergency contacts</Text>
 
-      <Text style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>
-        Active Emergency Contacts
-      </Text>
+        {/* ── middle (flex: 1) ── */}
+        {contacts.length === 0 ? (
+          <View style={styles.middle}>
+            <Text style={styles.subheading}>
+              Choose who to notify if you miss a check-in.{'\n'}
+              These people will receive an alert if you're unresponsive.
+            </Text>
 
-      <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-        {filteredContacts.length === 0 ? (
-          <Text style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>
-            No contacts added yet
-          </Text>
-        ) : (
-          filteredContacts.map((contact, index) => {
-            // Find original index for menu actions
-            const originalIndex = contacts.indexOf(contact);
-            return (
-              <View
-                key={originalIndex}
-                style={[styles.contactCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceVariant }]}
-              >
-                <View style={[styles.avatar, { backgroundColor: Colors.dark.avatarPlaceholder }]}>
-                  <MaterialCommunityIcons name="account" size={22} color={Colors.dark.text} />
+            {/* Dashed-circle illustration */}
+            <View style={styles.illustrationWrapper}>
+              <View style={styles.dashedCircle}>
+                <View style={styles.iconCard}>
+                  <MaterialCommunityIcons name="account-star" size={44} color={Colors.dark.primary} />
                 </View>
-                <View style={styles.contactInfo}>
-                  <Text style={[styles.contactName, { color: theme.colors.onSurface }]}>
-                    {contact.name || 'Unknown'}
-                  </Text>
-                  <Text style={[styles.contactDetail, { color: theme.colors.onSurfaceVariant }]}>
-                    {contact.phone || contact.email || 'No details'}
-                  </Text>
-                </View>
-                <Menu
-                  visible={menuVisible === originalIndex}
-                  onDismiss={() => setMenuVisible(null)}
-                  anchor={
-                    <IconButton
-                      icon="dots-vertical"
-                      onPress={() => setMenuVisible(originalIndex)}
-                    />
-                  }
-                >
-                  <Menu.Item onPress={() => { setMenuVisible(null); startEdit(originalIndex); }} title="Edit" />
-                  <Menu.Item onPress={() => removeContact(originalIndex)} title="Remove" />
-                </Menu>
               </View>
-            );
-          })
+              {/* "+" FAB at bottom-right of circle */}
+              <View style={styles.plusFab}>
+                <MaterialCommunityIcons name="plus" size={20} color={Colors.dark.text} />
+              </View>
+            </View>
+
+            <Text style={styles.emptyTitle}>No contacts added yet</Text>
+            <Text style={styles.emptySubtext}>
+              Sync your phonebook to easily select your{'\n'}
+              trusted emergency contacts.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionLabel}>Active Emergency Contacts</Text>
+            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+              {contacts.map((contact, index) => (
+                <View key={index} style={styles.contactCard}>
+                  <View style={styles.avatar}>
+                    <MaterialCommunityIcons name="account" size={22} color={Colors.dark.text} />
+                  </View>
+                  <View style={styles.contactInfo}>
+                    <Text style={styles.contactName}>{contact.name || 'Unknown'}</Text>
+                    <Text style={styles.contactDetail}>{contact.phone || contact.email || 'No details'}</Text>
+                  </View>
+                  <Menu
+                    visible={menuVisible === index}
+                    onDismiss={() => setMenuVisible(null)}
+                    style={styles.menu}
+                    anchor={<IconButton icon="dots-vertical" onPress={() => setMenuVisible(index)} />}
+                  >
+                    <Menu.Item onPress={() => { setMenuVisible(null); startEdit(index); }} title="Edit" />
+                    <Menu.Item onPress={() => removeContact(index)} title="Remove" />
+                  </Menu>
+                </View>
+              ))}
+            </ScrollView>
+          </>
         )}
-      </ScrollView>
 
-      <View style={styles.footer}>
-        <Button mode="outlined" onPress={startAdd} style={styles.addButton}>
-          Add Contact
-        </Button>
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          disabled={contacts.length === 0}
-          style={styles.continueButton}
-          contentStyle={styles.buttonContent}
-        >
-          Continue
-        </Button>
-      </View>
-
-      <Portal>
-        <Dialog visible={editingContact !== null} onDismiss={cancelEdit}>
-          <Dialog.Title>
-            {editingIndex === -1 ? 'Add Contact' : 'Edit Contact'}
-          </Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              value={editingContact?.name || ''}
-              onChangeText={(text) => updateEditingContact('name', text)}
-              label="Name"
-              mode="outlined"
-              style={styles.dialogInput}
-            />
-            <TextInput
-              value={editingContact?.phone || ''}
-              onChangeText={(text) => updateEditingContact('phone', text)}
-              label="Phone Number"
-              mode="outlined"
-              style={styles.dialogInput}
-              keyboardType="phone-pad"
-            />
-            <TextInput
-              value={editingContact?.email || ''}
-              onChangeText={(text) => updateEditingContact('email', text)}
-              label="Email"
-              mode="outlined"
-              style={styles.dialogInput}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Button mode="outlined" onPress={pickFromDevice} style={styles.pickButton}>
-              Pick from Device Contacts
+        {/* ── bottom buttons ── */}
+        {contacts.length === 0 ? (
+          <View style={styles.bottomButtons}>
+            <TouchableOpacity onPress={openSyncModal} style={styles.syncBtn}>
+              <MaterialCommunityIcons name="sync" size={18} color={Colors.dark.text} style={styles.syncIcon} />
+              <Text style={styles.syncBtnText}>Sync Phone Contacts</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={startAdd} style={styles.manualBtn}>
+              <Text style={styles.manualBtnText}>Add Manually</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.footer}>
+            <TouchableOpacity onPress={startAdd} style={styles.manualBtn}>
+              <Text style={styles.manualBtnText}>Add Contact</Text>
+            </TouchableOpacity>
+            <Button
+              mode="contained"
+              onPress={handleContinue}
+              style={styles.continueButton}
+              contentStyle={styles.buttonContent}
+            >
+              Continue
             </Button>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={cancelEdit}>Cancel</Button>
-            <Button onPress={saveEdit}>Save</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-    </View>
+          </View>
+        )}
+
+        {/* ── add / edit dialog ── */}
+        <Portal>
+          <ThemedDialog visible={editingContact !== null} onDismiss={cancelEdit}>
+            <Dialog.Title style={styles.dialogTitle}>
+              {editingIndex === -1 ? 'Add Contact' : 'Edit Contact'}
+            </Dialog.Title>
+            <Dialog.Content>
+              <TextInput
+                value={editingContact?.name || ''}
+                onChangeText={(text) => updateEditingContact('name', text)}
+                label="Name"
+                mode="outlined"
+                style={styles.dialogInput}
+              />
+              <TextInput
+                value={editingContact?.phone || ''}
+                onChangeText={(text) => updateEditingContact('phone', text)}
+                label="Phone Number"
+                mode="outlined"
+                style={styles.dialogInput}
+                keyboardType="phone-pad"
+              />
+              <TextInput
+                value={editingContact?.email || ''}
+                onChangeText={(text) => updateEditingContact('email', text)}
+                label="Email"
+                mode="outlined"
+                style={styles.dialogInput}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={cancelEdit}>Cancel</Button>
+              <Button onPress={saveEdit} disabled={!isValidContact(editingContact ?? undefined)}>
+                Save
+              </Button>
+            </Dialog.Actions>
+          </ThemedDialog>
+        </Portal>
+
+        {/* ── device-contact sync picker ── */}
+        <Portal>
+          <Modal
+            visible={showSyncModal}
+            onDismiss={() => setShowSyncModal(false)}
+            contentContainerStyle={styles.modal}
+          >
+            <Text style={styles.modalTitle}>Select a Contact</Text>
+            <FlatList
+              data={deviceContacts}
+              keyExtractor={(_, i) => i.toString()}
+              style={styles.modalList}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => selectDeviceContact(item)} style={styles.modalItem}>
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <Button onPress={() => setShowSyncModal(false)} style={styles.modalCancel}>
+              Cancel
+            </Button>
+          </Modal>
+        </Portal>
+      </View>
+    </ErrorBoundary>
   );
 };
 
+// ── styles ─────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+  // layout
   container: {
     flex: 1,
+    backgroundColor: Colors.dark.background,
     paddingHorizontal: 20,
   },
+  backBtn: {
+    position: 'absolute',
+    left: 16,
+    top: 22,
+    zIndex: 1,
+  },
   heading: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.dark.text,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 4,
   },
-  search: {
-    marginBottom: 16,
+
+  // ── empty state ──
+  middle: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  subheading: {
+    fontSize: 14,
+    color: Colors.dark.mutedText,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 28,
+  },
+  illustrationWrapper: {
+    width: 164,
+    height: 164,
+    position: 'relative',
+    marginBottom: 24,
+  },
+  dashedCircle: {
+    width: 164,
+    height: 164,
+    borderRadius: 82,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: Colors.dark.primary + '55',
+    backgroundColor: Colors.dark.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCard: {
+    width: 84,
+    height: 84,
+    borderRadius: 18,
+    backgroundColor: Colors.dark.primary + '25',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusFab: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.dark.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.dark.tealGlow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: Colors.dark.mutedText,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+
+  // ── populated state ──
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
+    color: Colors.dark.mutedText,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 10,
@@ -254,23 +382,21 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
-  emptyText: {
-    fontSize: 15,
-    textAlign: 'center',
-    paddingVertical: 32,
-  },
   contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: Colors.dark.surface,
     borderWidth: 1,
+    borderColor: Colors.dark.cardBorder,
+    borderRadius: 10,
+    padding: 12,
     marginBottom: 10,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: Colors.dark.avatarPlaceholder,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -281,17 +407,53 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 15,
     fontWeight: '600',
+    color: Colors.dark.text,
   },
   contactDetail: {
     fontSize: 13,
+    color: Colors.dark.mutedText,
     marginTop: 2,
   },
-  footer: {
-    paddingBottom: 48,
-    gap: 12,
+  menu: {
+    backgroundColor: Colors.dark.surface,
+    borderRadius: 8,
   },
-  addButton: {
+
+  // ── buttons ──
+  bottomButtons: {
+    gap: 12,
+    paddingBottom: 48,
+  },
+  syncBtn: {
+    backgroundColor: Colors.dark.primary,
     borderRadius: 30,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  syncIcon: {
+    marginRight: 8,
+  },
+  syncBtnText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  manualBtn: {
+    backgroundColor: Colors.dark.surface,
+    borderRadius: 30,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  manualBtnText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  footer: {
+    gap: 12,
+    paddingBottom: 48,
   },
   continueButton: {
     borderRadius: 30,
@@ -299,15 +461,41 @@ const styles = StyleSheet.create({
   buttonContent: {
     height: 48,
   },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+
+  // ── dialogs ──
+  dialogTitle: {
+    color: Colors.dark.text,
   },
   dialogInput: {
     marginBottom: 12,
   },
-  pickButton: {
-    marginTop: 8,
+  modal: {
+    backgroundColor: Colors.dark.surface,
+    padding: 20,
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  modalList: {
+    maxHeight: 300,
+  },
+  modalItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.cardBorder,
+  },
+  modalItemText: {
+    fontSize: 15,
+    color: Colors.dark.text,
+  },
+  modalCancel: {
+    marginTop: 12,
   },
 });
 

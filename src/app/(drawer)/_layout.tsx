@@ -1,37 +1,8 @@
-import { Drawer } from 'expo-router/drawer';
+import { Stack } from 'expo-router';
 
-export default function DrawerLayout() {
+export default function Layout() {
+  // Stack with headerShown false removes side drawer/hamburger.
   return (
-    <Drawer>
-      <Drawer.Screen
-        name="index"
-        options={{
-          drawerLabel: 'Home',
-          title: 'Emergency Check-In',
-          headerShown: false,
-        }}
-      />
-      <Drawer.Screen
-        name="settings"
-        options={{
-          drawerLabel: 'Settings',
-          title: 'Settings',
-        }}
-      />
-      <Drawer.Screen
-        name="profile"
-        options={{
-          drawerLabel: 'Profile',
-          title: 'Profile',
-        }}
-      />
-      <Drawer.Screen
-        name="about"
-        options={{
-          drawerLabel: 'About Us',
-          title: 'About Us',
-        }}
-      />
-    </Drawer>
+    <Stack screenOptions={{ headerShown: false }} />
   );
 }

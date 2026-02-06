@@ -34,12 +34,14 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
   const mm = String(time.mins).padStart(2, '0');
   const ss = String(time.secs).padStart(2, '0');
 
-  // Three-column layout positions (scale with size)
-  const leftX = size * 0.25;
-  const midX = size * 0.5;
-  const rightX = size * 0.75;
-  const numY = size * 0.47;
-  const lblY = size * 0.6;
+  // Five-column layout: hh : mm : ss  (positions scale with size)
+  const hhX      = size * 0.19;
+  const colon1X  = size * 0.345;
+  const mmX      = size * 0.50;
+  const colon2X  = size * 0.655;
+  const ssX      = size * 0.81;
+  const numY     = size * 0.47;
+  const lblY     = size * 0.60;
 
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -66,15 +68,24 @@ const CircularTimer: React.FC<CircularTimerProps> = ({
           strokeLinecap="round"
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
+
         {/* Hours */}
-        <SvgText x={leftX} y={numY} textAnchor="middle" fill={Colors.dark.text} fontSize={26} fontWeight="bold">{hh}</SvgText>
-        <SvgText x={leftX} y={lblY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={11}>hr</SvgText>
+        <SvgText x={hhX} y={numY} textAnchor="middle" fill={Colors.dark.text} fontSize={26} fontWeight="bold">{hh}</SvgText>
+        <SvgText x={hhX} y={lblY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={11}>hr</SvgText>
+
+        {/* Colon 1 */}
+        <SvgText x={colon1X} y={numY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={22} fontWeight="bold">:</SvgText>
+
         {/* Minutes */}
-        <SvgText x={midX} y={numY} textAnchor="middle" fill={Colors.dark.text} fontSize={26} fontWeight="bold">{mm}</SvgText>
-        <SvgText x={midX} y={lblY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={11}>min</SvgText>
+        <SvgText x={mmX} y={numY} textAnchor="middle" fill={Colors.dark.text} fontSize={26} fontWeight="bold">{mm}</SvgText>
+        <SvgText x={mmX} y={lblY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={11}>min</SvgText>
+
+        {/* Colon 2 */}
+        <SvgText x={colon2X} y={numY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={22} fontWeight="bold">:</SvgText>
+
         {/* Seconds */}
-        <SvgText x={rightX} y={numY} textAnchor="middle" fill={Colors.dark.text} fontSize={26} fontWeight="bold">{ss}</SvgText>
-        <SvgText x={rightX} y={lblY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={11}>sec</SvgText>
+        <SvgText x={ssX} y={numY} textAnchor="middle" fill={Colors.dark.text} fontSize={26} fontWeight="bold">{ss}</SvgText>
+        <SvgText x={ssX} y={lblY} textAnchor="middle" fill={Colors.dark.mutedText} fontSize={11}>sec</SvgText>
       </Svg>
     </View>
   );

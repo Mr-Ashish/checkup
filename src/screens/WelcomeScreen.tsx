@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { Button } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Colors } from '@/constants/theme';
+import homeImage from '@/assets/images/home-image.png';
 
 interface WelcomeScreenProps {
   onGetStarted: () => void;
@@ -17,6 +18,14 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onGetStarted }) => {
             name="shield-check"
             size={100}
             color={Colors.dark.primary}
+          />
+        </View>
+
+        <View style={styles.imageWrapper}>
+          <Image
+            source={homeImage}
+            style={styles.homeImage}
+            resizeMode="cover"
           />
         </View>
 
@@ -59,6 +68,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowOffset: { width: 0, height: 0 },
     elevation: 12,
+  },
+  imageWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+    shadowColor: Colors.dark.tealGlow,
+    shadowRadius: 20,
+    shadowOpacity: 0.5,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  homeImage: {
+    width: 280,
+    height: 180,
+    borderRadius: 16,
   },
   tagline: {
     color: Colors.dark.text,

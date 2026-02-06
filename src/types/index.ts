@@ -3,6 +3,9 @@ export interface Contact {
   name?: string;
   phone?: string;
   email?: string;
+  relationship?: string;
+  smsAlerts?: boolean;
+  automatedCalls?: boolean;
 }
 
 export interface User {
